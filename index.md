@@ -16,7 +16,7 @@ knit        : slidify::knit2slides
 </center>
 
 <center>
-Valerie Obenchain, Michael Love, Martin Morgan
+Valerie Obenchain, *Michael Love*, Martin Morgan
 </center>
 
 <center>
@@ -25,9 +25,17 @@ BioC2014: 1 August 2014
 
 ---
 
-# Example: epigenetic profiling of cell types
+# Example: [DNase I](http://www.rcsb.org/pdb/explore/jmol.do?structureId=2DNJ)
 
 <br>
+
+<center>
+![](dnase.png)
+</center>
+
+---
+
+# Example: [DNase-Seq](http://epigenomegateway.wustl.edu/browser/) of many cell types
 
 <center>
 ![](wustl.png)
@@ -61,10 +69,10 @@ $$
 
 <br>
 
-- Matrix multiplication $X^t X$ possible, but slow (2 hours)
+- [Matrix](http://cran.r-project.org/web/packages/Matrix/index.html) multiplication $X^t X$ possible, but slow (2 hours)
 - Limits on functions: only sparse $\rightarrow$ sparse
 - Must threshold low counts to stay < 10^9
-- For mammalian genome, seemed limited to 100s of samples
+- For mammalian genome, limited to 100s of samples
 
 <br>
 
@@ -132,7 +140,7 @@ viewApply(v, function(z) z * 10)
 
 # Going back to epigenetic tracks
 
-Want to load only one region at a time, no limit on # of files
+Want to load only one range at a time, no limit on # of files
 
 <br>
 
@@ -165,7 +173,7 @@ bwfv
 
 ```
 ## BigWigFileViews dim: 6 ranges x 4 samples 
-## names: test.bw test.bw.1 test.bw.2 test.bw.3 
+## names: wgEncodeCshlLongRnaSeqA549CellLongnonpolyaMinusRawSigRep1.bigWig wgEncodeCshlLongRnaSeqA549CellLongnonpolyaMinusRawSigRep2.bigWig wgEncodeCshlLongRnaSeqA549CellLongnonpolyaPlusRawSigRep1.bigWig wgEncodeCshlLongRnaSeqA549CellLongnonpolyaPlusRawSigRep2.bigWig 
 ## detail: use fileList(), fileSample(), fileRange(), ...
 ```
 
@@ -184,16 +192,16 @@ class(se)
 ```
 
 ```r
-assay(se)[4,1]
+assay(se)[1,1]
 ```
 
 ```
-## [[1]]
+## $A549.1
 ## RleList of length 1
-## $chr2
-## numeric-Rle of length 100 with 2 runs
-##   Lengths:    50    50
-##   Values : -0.75  -0.5
+## $chr1
+## numeric-Rle of length 1000000 with 17226 runs
+##   Lengths:  7096     2    14     1  2060 ...  1958    52  1304    76  1799
+##   Values :     0     4   168     1     0 ...     0     1     0     1     0
 ```
 
 ---
@@ -205,32 +213,56 @@ assay(se)
 ```
 
 ```
-##      [,1]   [,2]   [,3]   [,4]  
-## [1,] -1     -1     -1     -1    
-## [2,] -0.875 -0.875 -0.875 -0.875
-## [3,] -0.75  -0.75  -0.75  -0.75 
-## [4,] -0.625 -0.625 -0.625 -0.625
-## [5,] 0.25   0.25   0.25   0.25  
-## [6,] 0.375  0.375  0.375  0.375
+##      A549.1 A549.2 A549.3 A549.4
+## [1,] 16.61  13.9   13.03  10.35 
+## [2,] 39.07  30.96  12.95  11.44 
+## [3,] 2.924  2.433  4.03   3.46  
+## [4,] 2.405  2.022  2.738  2.55  
+## [5,] 9.853  8.324  11.86  9.503 
+## [6,] 2.064  1.725  3.031  2.758
 ```
 
 ---
 
-# map / reduce 
+# Again: [DNase-Seq](http://epigenomegateway.wustl.edu/browser/) of many cell types
+
+<center>
+![](wustl.png)
+</center>
+
+---
+
+# map / reduce task: add sparse coverage
+
+<br><br>
+
+<center>
+![](reduce.png)
+</center>
+
+*note: reduce step is within one branch of the parallelization*
+
+---
+
+# map / reduce task: add sparse coverage
+
+<br>
+
+Building up to a map function:
 
 
 ```r
 file <- files[1]
-range <- ranges[4]
+range <- ranges[1]
 import(BigWigFile(file), which=range, as="Rle")[range]
 ```
 
 ```
 ## RleList of length 1
-## $chr2
-## numeric-Rle of length 100 with 2 runs
-##   Lengths:    50    50
-##   Values : -0.75  -0.5
+## $chr1
+## numeric-Rle of length 1000000 with 17226 runs
+##   Lengths:  7096     2    14     1  2060 ...  1958    52  1304    76  1799
+##   Values :     0     4   168     1     0 ...     0     1     0     1     0
 ```
 
 ```r
@@ -241,7 +273,11 @@ MAPPER = function(range, file, ...) {
 
 ---
 
-# map / reduce
+# map / reduce task: add sparse coverage
+
+<br><br>
+
+Reduce step merely adds the Rle's:
 
 
 ```r
@@ -252,12 +288,14 @@ REDUCER = function(mapped, ...) {
 
 ---
 
-# map / reduce
+# map / reduce task: add sparse coverage
+
+Run it with `reduceByRange()`
 
 
 ```r
 library(BiocParallel)
-register(SerialParam()) # MulticoreParam(workers=4)
+register(SerialParam()) # MulticoreParam(workers=10)
 res <- reduceByRange(ranges, files, MAPPER, REDUCER)
 length(res)
 ```
@@ -267,14 +305,16 @@ length(res)
 ```
 
 ```r
-res[[4]]
+res[[1]]
 ```
 
 ```
-## numeric-Rle of length 100 with 2 runs
-##   Lengths: 50 50
-##   Values : -3 -2
+## numeric-Rle of length 1000000 with 42901 runs
+##   Lengths:  641   14 3097   76   17   76 ...    8    3    5   35   23    1
+##   Values :    0    8    0    2    0    2 ...    4    5    3    2    3    2
 ```
+
+*Genomic Files v1.1 (devel branch) syntax*
 
 ---
 
@@ -283,18 +323,21 @@ res[[4]]
 - Bam
 - BigWig
 - FASTA
-- (tabix, VCF)
+- potentially extensible to tabix, VCF?
 
 ---
 
 # Next
 
 - Profiling
-- Guide user wrt optimization of region size
+    - w/o tweaking, coverage sum is 2-3x WiggleTools
+- Guide user wrt optimization of range width
+    - `tileGenome()`
 - Suggestions?
+
+<br>
 
 Thanks:
 - Valerie Obenchain
 - Martin Morgan
-- Rafael Irizarry
-- Kasper Hansen
+- Rafael Irizarry & Kasper Hansen

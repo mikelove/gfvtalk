@@ -23,7 +23,7 @@
 <p></center></p>
 
 <p><center>
-Valerie Obenchain, Michael Love, Martin Morgan
+Valerie Obenchain, <em>Michael Love</em>, Martin Morgan
 </center></p>
 
 <p><center>
@@ -33,16 +33,24 @@ BioC2014: 1 August 2014
 </article>
 
 <article class="" id="slide-2" style="background:;">
-  <h3>Example: epigenetic profiling of cell types</h3>
+  <h3>Example: <a href="http://www.rcsb.org/pdb/explore/jmol.do?structureId=2DNJ">DNase I</a></h3>
   <p><br></p>
 
 <p><center>
-<img src="wustl.png" alt="">
+<img src="dnase.png" alt="">
 </center></p>
 
 </article>
 
 <article class="" id="slide-3" style="background:;">
+  <h3>Example: <a href="http://epigenomegateway.wustl.edu/browser/">DNase-Seq</a> of many cell types</h3>
+  <p><center>
+<img src="wustl.png" alt="">
+</center></p>
+
+</article>
+
+<article class="" id="slide-4" style="background:;">
   <h3>My solution in 2011</h3>
   <ul>
 <li>BEDTools: reads in 200 bp windows for 100+ samples</li>
@@ -66,15 +74,15 @@ BioC2014: 1 August 2014
 
 </article>
 
-<article class="" id="slide-4" style="background:;">
+<article class="" id="slide-5" style="background:;">
   <h3>Limitations to this approach</h3>
   <p><br></p>
 
 <ul>
-<li>Matrix multiplication \(X^t X\) possible, but slow (2 hours)</li>
+<li><a href="http://cran.r-project.org/web/packages/Matrix/index.html">Matrix</a> multiplication \(X^t X\) possible, but slow (2 hours)</li>
 <li>Limits on functions: only sparse \(\rightarrow\) sparse</li>
 <li>Must threshold low counts to stay &lt; 10<sup>9</sup></li>
-<li>For mammalian genome, seemed limited to 100s of samples</li>
+<li>For mammalian genome, limited to 100s of samples</li>
 </ul>
 
 <p><br></p>
@@ -83,7 +91,7 @@ BioC2014: 1 August 2014
 
 </article>
 
-<article class="" id="slide-5" style="background:;">
+<article class="" id="slide-6" style="background:;">
   <h3>Views approach</h3>
   <p>Each range is said to represent a <em>view</em> onto the sequence.</p>
 
@@ -108,7 +116,7 @@ BioC2014: 1 August 2014
 
 </article>
 
-<article class="" id="slide-6" style="background:;">
+<article class="" id="slide-7" style="background:;">
   <h3>Operating on views</h3>
   <pre><code class="r">v[[1]] * 10
 </code></pre>
@@ -129,9 +137,9 @@ BioC2014: 1 August 2014
 
 </article>
 
-<article class="" id="slide-7" style="background:;">
+<article class="" id="slide-8" style="background:;">
   <h3>Going back to epigenetic tracks</h3>
-  <p>Want to load only one region at a time, no limit on # of files</p>
+  <p>Want to load only one range at a time, no limit on # of files</p>
 
 <p><br></p>
 
@@ -141,7 +149,7 @@ BioC2014: 1 August 2014
 
 </article>
 
-<article class="" id="slide-8" style="background:;">
+<article class="" id="slide-9" style="background:;">
   <h3>Request to bioc-devel</h3>
   <p><br><br></p>
 
@@ -153,7 +161,7 @@ to provide infrastructure for parallel execution over a group of common file typ
 
 </article>
 
-<article class="" id="slide-9" style="background:;">
+<article class="" id="slide-10" style="background:;">
   <h3></h3>
   <pre><code class="r">library(GenomicFiles)
 bwfv &lt;- BigWigFileViews(files, fileRange=ranges)
@@ -161,13 +169,13 @@ bwfv
 </code></pre>
 
 <pre><code>## BigWigFileViews dim: 6 ranges x 4 samples 
-## names: test.bw test.bw.1 test.bw.2 test.bw.3 
+## names: wgEncodeCshlLongRnaSeqA549CellLongnonpolyaMinusRawSigRep1.bigWig wgEncodeCshlLongRnaSeqA549CellLongnonpolyaMinusRawSigRep2.bigWig wgEncodeCshlLongRnaSeqA549CellLongnonpolyaPlusRawSigRep1.bigWig wgEncodeCshlLongRnaSeqA549CellLongnonpolyaPlusRawSigRep2.bigWig 
 ## detail: use fileList(), fileSample(), fileRange(), ...
 </code></pre>
 
 </article>
 
-<article class="" id="slide-10" style="background:;">
+<article class="" id="slide-11" style="background:;">
   <h3></h3>
   <pre><code class="r">se &lt;- coverage(bwfv)
 class(se)
@@ -178,48 +186,72 @@ class(se)
 ## [1] &quot;GenomicRanges&quot;
 </code></pre>
 
-<pre><code class="r">assay(se)[4,1]
+<pre><code class="r">assay(se)[1,1]
 </code></pre>
 
-<pre><code>## [[1]]
+<pre><code>## $A549.1
 ## RleList of length 1
-## $chr2
-## numeric-Rle of length 100 with 2 runs
-##   Lengths:    50    50
-##   Values : -0.75  -0.5
-</code></pre>
-
-</article>
-
-<article class="" id="slide-11" style="background:;">
-  <h3></h3>
-  <pre><code class="r">se &lt;- summary(bwfv)
-assay(se)
-</code></pre>
-
-<pre><code>##      [,1]   [,2]   [,3]   [,4]  
-## [1,] -1     -1     -1     -1    
-## [2,] -0.875 -0.875 -0.875 -0.875
-## [3,] -0.75  -0.75  -0.75  -0.75 
-## [4,] -0.625 -0.625 -0.625 -0.625
-## [5,] 0.25   0.25   0.25   0.25  
-## [6,] 0.375  0.375  0.375  0.375
+## $chr1
+## numeric-Rle of length 1000000 with 17226 runs
+##   Lengths:  7096     2    14     1  2060 ...  1958    52  1304    76  1799
+##   Values :     0     4   168     1     0 ...     0     1     0     1     0
 </code></pre>
 
 </article>
 
 <article class="" id="slide-12" style="background:;">
-  <h3>map / reduce</h3>
-  <pre><code class="r">file &lt;- files[1]
-range &lt;- ranges[4]
+  <h3></h3>
+  <pre><code class="r">se &lt;- summary(bwfv)
+assay(se)
+</code></pre>
+
+<pre><code>##      A549.1 A549.2 A549.3 A549.4
+## [1,] 16.61  13.9   13.03  10.35 
+## [2,] 39.07  30.96  12.95  11.44 
+## [3,] 2.924  2.433  4.03   3.46  
+## [4,] 2.405  2.022  2.738  2.55  
+## [5,] 9.853  8.324  11.86  9.503 
+## [6,] 2.064  1.725  3.031  2.758
+</code></pre>
+
+</article>
+
+<article class="" id="slide-13" style="background:;">
+  <h3>Again: <a href="http://epigenomegateway.wustl.edu/browser/">DNase-Seq</a> of many cell types</h3>
+  <p><center>
+<img src="wustl.png" alt="">
+</center></p>
+
+</article>
+
+<article class="" id="slide-14" style="background:;">
+  <h3>map / reduce task: add sparse coverage</h3>
+  <p><br><br></p>
+
+<p><center>
+<img src="reduce.png" alt="">
+</center></p>
+
+<p><em>note: reduce step is within one branch of the parallelization</em></p>
+
+</article>
+
+<article class="" id="slide-15" style="background:;">
+  <h3>map / reduce task: add sparse coverage</h3>
+  <p><br></p>
+
+<p>Building up to a map function:</p>
+
+<pre><code class="r">file &lt;- files[1]
+range &lt;- ranges[1]
 import(BigWigFile(file), which=range, as=&quot;Rle&quot;)[range]
 </code></pre>
 
 <pre><code>## RleList of length 1
-## $chr2
-## numeric-Rle of length 100 with 2 runs
-##   Lengths:    50    50
-##   Values : -0.75  -0.5
+## $chr1
+## numeric-Rle of length 1000000 with 17226 runs
+##   Lengths:  7096     2    14     1  2060 ...  1958    52  1304    76  1799
+##   Values :     0     4   168     1     0 ...     0     1     0     1     0
 </code></pre>
 
 <pre><code class="r">MAPPER = function(range, file, ...) {
@@ -229,19 +261,25 @@ import(BigWigFile(file), which=range, as=&quot;Rle&quot;)[range]
 
 </article>
 
-<article class="" id="slide-13" style="background:;">
-  <h3>map / reduce</h3>
-  <pre><code class="r">REDUCER = function(mapped, ...) {
+<article class="" id="slide-16" style="background:;">
+  <h3>map / reduce task: add sparse coverage</h3>
+  <p><br><br></p>
+
+<p>Reduce step merely adds the Rle&#39;s:</p>
+
+<pre><code class="r">REDUCER = function(mapped, ...) {
   Reduce(&quot;+&quot;, mapped)
 }
 </code></pre>
 
 </article>
 
-<article class="" id="slide-14" style="background:;">
-  <h3>map / reduce</h3>
-  <pre><code class="r">library(BiocParallel)
-register(SerialParam()) # MulticoreParam(workers=4)
+<article class="" id="slide-17" style="background:;">
+  <h3>map / reduce task: add sparse coverage</h3>
+  <p>Run it with <code>reduceByRange()</code></p>
+
+<pre><code class="r">library(BiocParallel)
+register(SerialParam()) # MulticoreParam(workers=10)
 res &lt;- reduceByRange(ranges, files, MAPPER, REDUCER)
 length(res)
 </code></pre>
@@ -249,42 +287,53 @@ length(res)
 <pre><code>## [1] 6
 </code></pre>
 
-<pre><code class="r">res[[4]]
+<pre><code class="r">res[[1]]
 </code></pre>
 
-<pre><code>## numeric-Rle of length 100 with 2 runs
-##   Lengths: 50 50
-##   Values : -3 -2
+<pre><code>## numeric-Rle of length 1000000 with 42901 runs
+##   Lengths:  641   14 3097   76   17   76 ...    8    3    5   35   23    1
+##   Values :    0    8    0    2    0    2 ...    4    5    3    2    3    2
 </code></pre>
+
+<p><em>Genomic Files v1.1 (devel branch) syntax</em></p>
 
 </article>
 
-<article class="" id="slide-15" style="background:;">
+<article class="" id="slide-18" style="background:;">
   <h3>Files supported</h3>
   <ul>
 <li>Bam</li>
 <li>BigWig</li>
 <li>FASTA</li>
-<li>(tabix, VCF)</li>
+<li>potentially extensible to tabix, VCF?</li>
 </ul>
 
 </article>
 
-<article class="" id="slide-16" style="background:;">
+<article class="" id="slide-19" style="background:;">
   <h3>Next</h3>
   <ul>
-<li>Profiling</li>
-<li>Guide user wrt optimization of region size</li>
+<li>Profiling
+
+<ul>
+<li>w/o tweaking, coverage sum is 2-3x WiggleTools</li>
+</ul></li>
+<li>Guide user wrt optimization of range width
+
+<ul>
+<li><code>tileGenome()</code></li>
+</ul></li>
 <li>Suggestions?</li>
 </ul>
+
+<p><br></p>
 
 <p>Thanks:</p>
 
 <ul>
 <li>Valerie Obenchain</li>
 <li>Martin Morgan</li>
-<li>Rafael Irizarry</li>
-<li>Kasper Hansen</li>
+<li>Rafael Irizarry &amp; Kasper Hansen</li>
 </ul>
 
 </article>

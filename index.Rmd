@@ -16,7 +16,7 @@ knit        : slidify::knit2slides
 </center>
 
 <center>
-Valerie Obenchain, Michael Love, Martin Morgan
+Valerie Obenchain, *Michael Love*, Martin Morgan
 </center>
 
 <center>
@@ -25,9 +25,17 @@ BioC2014: 1 August 2014
 
 ---
 
-# Example: epigenetic profiling of cell types
+# Example: [DNase I](http://www.rcsb.org/pdb/explore/jmol.do?structureId=2DNJ)
 
 <br>
+
+<center>
+![](dnase.png)
+</center>
+
+---
+
+# Example: [DNase-Seq](http://epigenomegateway.wustl.edu/browser/) of many cell types
 
 <center>
 ![](wustl.png)
@@ -61,10 +69,10 @@ $$
 
 <br>
 
-- Matrix multiplication $X^t X$ possible, but slow (2 hours)
+- [Matrix](http://cran.r-project.org/web/packages/Matrix/index.html) multiplication $X^t X$ possible, but slow (2 hours)
 - Limits on functions: only sparse $\rightarrow$ sparse
 - Must threshold low counts to stay < 10^9
-- For mammalian genome, seemed limited to 100s of samples
+- For mammalian genome, limited to 100s of samples
 
 <br>
 
@@ -99,7 +107,7 @@ viewApply(v, function(z) z * 10)
 
 # Going back to epigenetic tracks
 
-Want to load only one region at a time, no limit on # of files
+Want to load only one range at a time, no limit on # of files
 
 <br>
 
@@ -124,9 +132,10 @@ to provide infrastructure for parallel execution over a group of common file typ
 ```{r, echo=FALSE}
 library(GenomicFiles)
 library(rtracklayer)
-files <- rep(system.file("tests", "test.bw", package = "rtracklayer"),4)
-ranges <- GRanges(Rle(c("chr2", "chr19"), c(4, 2)),
-                  IRanges(1 + c(200, 250, 500, 550, 1450, 1750), width=100))
+files <- list.files("~/data/bigwig",full=TRUE)
+names(files) <- paste0("A549.",1:4)
+ranges <- GRanges(Rle(c("chr1", "chr2"), c(3, 3)),
+                  IRanges(1 + 11:16 * 1e6, width=1e6))
 ```
 
 ```{r}
@@ -140,7 +149,7 @@ bwfv
 ```{r}
 se <- coverage(bwfv)
 class(se)
-assay(se)[4,1]
+assay(se)[1,1]
 ```
 
 ---
@@ -152,11 +161,35 @@ assay(se)
 
 ---
 
-# map / reduce 
+# Again: [DNase-Seq](http://epigenomegateway.wustl.edu/browser/) of many cell types
+
+<center>
+![](wustl.png)
+</center>
+
+---
+
+# map / reduce task: add sparse coverage
+
+<br><br>
+
+<center>
+![](reduce.png)
+</center>
+
+*note: reduce step is within one branch of the parallelization*
+
+---
+
+# map / reduce task: add sparse coverage
+
+<br>
+
+Building up to a map function:
 
 ```{r}
 file <- files[1]
-range <- ranges[4]
+range <- ranges[1]
 import(BigWigFile(file), which=range, as="Rle")[range]
 
 MAPPER = function(range, file, ...) {
@@ -166,7 +199,11 @@ MAPPER = function(range, file, ...) {
 
 ---
 
-# map / reduce
+# map / reduce task: add sparse coverage
+
+<br><br>
+
+Reduce step merely adds the Rle's:
 
 ```{r}
 REDUCER = function(mapped, ...) {
@@ -176,15 +213,19 @@ REDUCER = function(mapped, ...) {
 
 ---
 
-# map / reduce
+# map / reduce task: add sparse coverage
+
+Run it with `reduceByRange()`
 
 ```{r}
 library(BiocParallel)
-register(SerialParam()) # MulticoreParam(workers=4)
+register(SerialParam()) # MulticoreParam(workers=10)
 res <- reduceByRange(ranges, files, MAPPER, REDUCER)
 length(res)
-res[[4]]
+res[[1]]
 ```
+
+*Genomic Files v1.1 (devel branch) syntax*
 
 ---
 
@@ -193,18 +234,21 @@ res[[4]]
 - Bam
 - BigWig
 - FASTA
-- potentially extend to tabix, VCF
+- potentially extensible to tabix, VCF?
 
 ---
 
 # Next
 
 - Profiling
-- Guide user wrt optimization of region size
+    - w/o tweaking, coverage sum is 2-3x WiggleTools
+- Guide user wrt optimization of range width
+    - `tileGenome()`
 - Suggestions?
+
+<br>
 
 Thanks:
 - Valerie Obenchain
 - Martin Morgan
-- Rafael Irizarry
-- Kasper Hansen
+- Rafael Irizarry & Kasper Hansen
