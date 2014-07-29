@@ -76,23 +76,56 @@ $$
 
 Each range is said to represent a *view* onto the sequence.
 
-```{r,echo=FALSE}
-library(IRanges)
-```
 
-```{r}
+
+
+```r
 library(IRanges)
 (x <- Rle(c(rep(0,5),1:5)))
+```
+
+```
+## numeric-Rle of length 10 with 6 runs
+##   Lengths: 5 1 1 1 1 1
+##   Values : 0 1 2 3 4 5
+```
+
+```r
 (v <- Views(x, IRanges(4,7)))
+```
+
+```
+## Views on a 10-length Rle subject
+## 
+## views:
+##     start end width
+## [1]     4   7     4 [0 0 1 2]
 ```
 
 ---
 
 # Operating on views
 
-```{r}
+
+```r
 v[[1]] * 10
+```
+
+```
+## numeric-Rle of length 4 with 3 runs
+##   Lengths:  2  1  1
+##   Values :  0 10 20
+```
+
+```r
 viewApply(v, function(z) z * 10)
+```
+
+```
+## [[1]]
+## numeric-Rle of length 4 with 3 runs
+##   Lengths:  2  1  1
+##   Values :  0 10 20
 ```
 
 ---
@@ -121,44 +154,86 @@ to provide infrastructure for parallel execution over a group of common file typ
 
 ---
 
-```{r, echo=FALSE}
-library(GenomicFiles)
-library(rtracklayer)
-files <- rep(system.file("tests", "test.bw", package = "rtracklayer"),4)
-ranges <- GRanges(Rle(c("chr2", "chr19"), c(4, 2)),
-                  IRanges(1 + c(200, 250, 500, 550, 1450, 1750), width=100))
-```
 
-```{r}
+
+
+```r
 library(GenomicFiles)
 bwfv <- BigWigFileViews(files, fileRange=ranges)
 bwfv
 ```
 
----
-
-```{r}
-se <- coverage(bwfv)
-class(se)
-assay(se)[4,1]
+```
+## BigWigFileViews dim: 6 ranges x 4 samples 
+## names: test.bw test.bw.1 test.bw.2 test.bw.3 
+## detail: use fileList(), fileSample(), fileRange(), ...
 ```
 
 ---
 
-```{r}
+
+```r
+se <- coverage(bwfv)
+class(se)
+```
+
+```
+## [1] "SummarizedExperiment"
+## attr(,"package")
+## [1] "GenomicRanges"
+```
+
+```r
+assay(se)[4,1]
+```
+
+```
+## [[1]]
+## RleList of length 1
+## $chr2
+## numeric-Rle of length 100 with 2 runs
+##   Lengths:    50    50
+##   Values : -0.75  -0.5
+```
+
+---
+
+
+```r
 se <- summary(bwfv)
 assay(se)
+```
+
+```
+##      [,1]   [,2]   [,3]   [,4]  
+## [1,] -1     -1     -1     -1    
+## [2,] -0.875 -0.875 -0.875 -0.875
+## [3,] -0.75  -0.75  -0.75  -0.75 
+## [4,] -0.625 -0.625 -0.625 -0.625
+## [5,] 0.25   0.25   0.25   0.25  
+## [6,] 0.375  0.375  0.375  0.375
 ```
 
 ---
 
 # map / reduce 
 
-```{r}
+
+```r
 file <- files[1]
 range <- ranges[4]
 import(BigWigFile(file), which=range, as="Rle")[range]
+```
 
+```
+## RleList of length 1
+## $chr2
+## numeric-Rle of length 100 with 2 runs
+##   Lengths:    50    50
+##   Values : -0.75  -0.5
+```
+
+```r
 MAPPER = function(range, file, ...) {
   import(BigWigFile(file), which=range, as="Rle")[range][[1]]
 }
@@ -168,7 +243,8 @@ MAPPER = function(range, file, ...) {
 
 # map / reduce
 
-```{r}
+
+```r
 REDUCER = function(mapped, ...) {
   Reduce("+", mapped)
 }
@@ -178,12 +254,26 @@ REDUCER = function(mapped, ...) {
 
 # map / reduce
 
-```{r}
+
+```r
 library(BiocParallel)
 register(SerialParam()) # MulticoreParam(workers=4)
 res <- reduceByRange(ranges, files, MAPPER, REDUCER)
 length(res)
+```
+
+```
+## [1] 6
+```
+
+```r
 res[[4]]
+```
+
+```
+## numeric-Rle of length 100 with 2 runs
+##   Lengths: 50 50
+##   Values : -3 -2
 ```
 
 ---
@@ -193,7 +283,7 @@ res[[4]]
 - Bam
 - BigWig
 - FASTA
-- potentially extend to tabix, VCF
+- (tabix, VCF)
 
 ---
 
